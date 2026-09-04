@@ -936,7 +936,7 @@
         }
         if (applyGray) {
           const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-          let v = (gray - 128) * 2.2 + 128;
+          let v = (gray - 128) * 1.6 + 128;
           v = v * 1.05;
           v = v < 0 ? 0 : (v > 255 ? 255 : v);
           r = v; g = v; b = v;
@@ -1468,7 +1468,7 @@
       setInterval(() => {
         favVisible = !favVisible;
         faviconLink.href = favVisible ? onIcon : offIcon;
-      }, 600);
+      }, 250);
     })();
   </script>
 </body>
