@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ETERNAL CONFUSION™</title>
+  <link id="faviconLink" rel="icon" type="image/png" href="">
 
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-FDHMTCGX8T"></script>
@@ -554,7 +555,7 @@
     }
 
     function addTextInput() {
-      textItems.push({ text: "NEW KINETIC CARD", rotation: 0, scale: 1.0, weight: "400" });
+      textItems.push({ text: "NEW TEXT", rotation: 0, scale: 1.0, weight: "400" });
       renderTextInputs();
     }
 
@@ -1438,6 +1439,37 @@
 
     renderTextInputs();
     loadImagesFromDB().then(() => restartTimer());
+
+    // Blinking favicon — a black circle that toggles on/off, echoing the
+    // tool's own flicker aesthetic in the browser tab.
+    (function setupBlinkingFavicon() {
+      const favCanvas = document.createElement('canvas');
+      favCanvas.width = 32;
+      favCanvas.height = 32;
+      const favCtx = favCanvas.getContext('2d');
+
+      function circleDataUrl(visible) {
+        favCtx.clearRect(0, 0, 32, 32);
+        if (visible) {
+          favCtx.fillStyle = '#000000';
+          favCtx.beginPath();
+          favCtx.arc(16, 16, 14, 0, Math.PI * 2);
+          favCtx.fill();
+        }
+        return favCanvas.toDataURL('image/png');
+      }
+
+      const onIcon = circleDataUrl(true);
+      const offIcon = circleDataUrl(false);
+      const faviconLink = document.getElementById('faviconLink');
+      let favVisible = true;
+      faviconLink.href = onIcon;
+
+      setInterval(() => {
+        favVisible = !favVisible;
+        faviconLink.href = favVisible ? onIcon : offIcon;
+      }, 600);
+    })();
   </script>
 </body>
 </html>
