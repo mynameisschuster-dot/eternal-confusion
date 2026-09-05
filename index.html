@@ -1107,7 +1107,14 @@
       const targetFPS = 30;
       const totalFrames = durationSeconds * targetFPS;
 
-      if (window.VideoEncoder && window.Mp4Muxer) {
+      // iOS Safari's WebCodecs (VideoEncoder) support is known to be unreliable —
+      // it can hang indefinitely on flush() without ever throwing, which would
+      // otherwise freeze the export with no way to recover. Skip straight to the
+      // battle-tested MediaRecorder path on iOS.
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      if (!isIOS && window.VideoEncoder && window.Mp4Muxer) {
         try {
           const muxer = new Mp4Muxer.Muxer({
             target: new Mp4Muxer.ArrayBufferTarget(),
@@ -1132,7 +1139,12 @@
             framerate: targetFPS
           });
 
-          return await new Promise((resolve) => {
+          const withTimeout = (promise, ms, label) => Promise.race([
+            promise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out`)), ms))
+          ]);
+
+          const result = await withTimeout(new Promise((resolve) => {
             let frameCount = 0;
             const frameIntervalMicros = 1_000_000 / targetFPS;
 
@@ -1141,7 +1153,7 @@
                 clearInterval(recordInterval);
                 if (onProgress) onProgress('Finalizing MP4...');
 
-                await videoEncoder.flush();
+                await withTimeout(videoEncoder.flush(), 15000, 'MP4 finalize');
                 muxer.finalize();
 
                 const buffer = muxer.target.buffer;
@@ -1158,7 +1170,9 @@
                 onProgress(`Encoding (${frameCount}/${totalFrames})...`);
               }
             }, 1000 / targetFPS);
-          });
+          }), (durationSeconds * 1000) + 20000, 'MP4 encoding');
+
+          return result;
         } catch (err) {
           console.warn("WebCodecs encoding fallback:", err);
         }
